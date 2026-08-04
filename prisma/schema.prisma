@@ -1,0 +1,247 @@
+// Prisma schema for ร้านลูกปลา 20 บาท order app
+// Production database: PostgreSQL, via DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Admin & Auth ----------
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+// ---------- Catalog ----------
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String    @default("")
+  price           Float
+  compareAtPrice  Float?
+  stock           Int       @default(0)
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  images       ProductImage[]
+  optionGroups ProductOptionGroup[]
+  promotions   Promotion[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int     @default(0)
+
+  @@index([productId])
+}
+
+// e.g. group "สี" -> values แดง/เขียว/น้ำเงิน, group "ขนาด" -> values S/M/L
+model ProductOptionGroup {
+  id        String               @id @default(cuid())
+  productId String
+  product   Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int                  @default(0)
+  values    ProductOptionValue[]
+
+  @@index([productId])
+}
+
+model ProductOptionValue {
+  id         String             @id @default(cuid())
+  groupId    String
+  group      ProductOptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  label      String
+  priceDelta Float              @default(0)
+  stock      Int                @default(0)
+  sortOrder  Int                @default(0)
+
+  orderItemOptions OrderItemOption[]
+
+  @@index([groupId])
+}
+
+// ---------- Promotions ----------
+
+enum PromotionType {
+  PRODUCT_DISCOUNT
+  COUPON
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Promotion {
+  id               String        @id @default(cuid())
+  type             PromotionType
+  code             String?       @unique // required for COUPON, null for PRODUCT_DISCOUNT
+  discountType     DiscountType
+  value            Float
+  minOrderAmount   Float?
+  maxUses          Int?
+  usedCount        Int           @default(0)
+  expiresAt        DateTime?
+  isActive         Boolean       @default(true)
+  productId        String?
+  product          Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  orders           Order[]
+
+  @@index([productId])
+}
+
+// ---------- Orders ----------
+
+enum PaymentMethod {
+  PROMPTPAY
+  BANK_TRANSFER
+  COD
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPING
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  orderNumber    String        @unique // e.g. ORD-000001
+  customerName   String
+  phone          String
+  address        String
+  note           String        @default("")
+  lineUserId     String?
+  paymentMethod  PaymentMethod
+  paymentSlipUrl String?
+  status         OrderStatus   @default(PENDING_PAYMENT)
+  subtotal       Float
+  discount       Float         @default(0)
+  shippingFee    Float         @default(0)
+  total          Float
+  promotionId    String?
+  promotion      Promotion?    @relation(fields: [promotionId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  items       OrderItem[]
+  statusLogs  OrderStatusLog[]
+
+  @@index([phone])
+  @@index([lineUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  productName String // snapshot at time of order
+  optionLabel String? // display snapshot, e.g. "สี: แดง / ขนาด: M"
+  note        String  @default("") // free-text note from customer for this item
+  unitPrice   Float // snapshot (base price + option deltas)
+  quantity    Int
+  subtotal    Float
+
+  selectedOptions OrderItemOption[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// One row per selected option value (a product can have multiple option
+// groups, e.g. color + size, selected together on a single order item).
+model OrderItemOption {
+  id            String              @id @default(cuid())
+  orderItemId   String
+  orderItem     OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  optionValueId String?
+  optionValue   ProductOptionValue? @relation(fields: [optionValueId], references: [id])
+  groupName     String // snapshot, e.g. "สี"
+  valueLabel    String // snapshot, e.g. "แดง"
+  priceDelta    Float   @default(0)
+
+  @@index([orderItemId])
+  @@index([optionValueId])
+}
+
+model OrderStatusLog {
+  id         String      @id @default(cuid())
+  orderId    String
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  createdAt  DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+// Atomic counter for sequential order numbers (ORD-000001, ORD-000002, ...)
+model OrderSequence {
+  id         Int @id @default(1)
+  lastNumber Int @default(0)
+}
+
+// ---------- Push Notifications ----------
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+// ---------- Store Settings (singleton row, id = 1) ----------
+
+model StoreSettings {
+  id                    Int      @id @default(1)
+  storeName             String   @default("ร้านลูกปลา 20 บาท")
+  logoUrl               String   @default("/images/logo-placeholder.svg")
+  bannerUrls            String   @default("[]") // JSON-encoded string[] (SQLite has no native array type)
+  promptpayId           String   @default("0812345678")
+  bankName              String   @default("ธนาคารกสิกรไทย")
+  bankAccountNumber     String   @default("123-4-56789-0")
+  bankAccountName       String   @default("ร้านลูกปลา 20 บาท")
+  codEnabled            Boolean  @default(true)
+  shippingFlatRate      Float    @default(40)
+  freeShippingThreshold Float?   @default(500)
+  updatedAt             DateTime @updatedAt
+}

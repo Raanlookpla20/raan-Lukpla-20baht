@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <rect width="400" height="400" fill="#f0fdfa"/>
+  <rect x="0" y="0" width="400" height="400" fill="none" stroke="#ccfbf1" stroke-width="8"/>
+  <g transform="translate(200,210)">
+    <path d="M -90 -40 L 0 -90 L 90 -40 L 90 70 L -90 70 Z" fill="#5eead4" opacity="0.35"/>
+    <path d="M -90 -40 L 0 -10 L 90 -40" fill="none" stroke="#0ea5e9" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M 0 -10 L 0 70" stroke="#0ea5e9" stroke-width="6"/>
+    <path d="M -90 -40 L -90 70 L 90 70 L 90 -40" fill="none" stroke="#0ea5e9" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M -35 -63 L -35 -95 Q -35 -115 0 -115 Q 35 -115 35 -95 L 35 -63" fill="none" stroke="#0ea5e9" stroke-width="6"/>
+  </g>
+  <text x="200" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#0d9488">ไม่มีรูปภาพ</text>
+</svg>

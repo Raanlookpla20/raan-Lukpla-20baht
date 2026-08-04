@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="url(#logoGrad)"/>
+  <circle cx="60" cy="60" r="58" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.6"/>
+  <g transform="translate(60,52)">
+    <path d="M -28 0 C -28 -14 -10 -22 8 -14 C 20 -9 28 0 28 0 C 28 0 20 9 8 14 C -10 22 -28 14 -28 0 Z" fill="#ffffff"/>
+    <circle cx="-14" cy="-3" r="3" fill="#0ea5e9"/>
+    <path d="M 28 0 L 40 -8 L 40 8 Z" fill="#ffffff"/>
+  </g>
+  <text x="60" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">ลูกปลา 20 บาท</text>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" width="1200" height="480">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="480" fill="url(#bg2)"/>
+  <circle cx="150" cy="100" r="140" fill="#ffffff" opacity="0.08"/>
+  <circle cx="1080" cy="400" r="180" fill="#ffffff" opacity="0.08"/>
+  <text x="80" y="230" font-family="Arial, sans-serif" font-weight="800" font-size="60" fill="#ffffff">โปรโมชั่นพิเศษวันนี้</text>
+  <text x="80" y="290" font-family="Arial, sans-serif" font-weight="400" font-size="28" fill="#dbeafe">สินค้าคุณภาพ หลากหลายหมวดหมู่ กว่า 1,000 รายการ</text>
+</svg>
