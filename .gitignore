@@ -54,3 +54,6 @@ next-env.d.ts
 # user-uploaded files (local storage provider, dev only)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+.vercel
+.env*
