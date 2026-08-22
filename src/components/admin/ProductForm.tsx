@@ -330,12 +330,20 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                 </button>
               </div>
               <div className="flex flex-col gap-2">
+                {group.values.length > 0 && (
+                  <div className="flex items-center gap-2 px-0.5 text-[10px] font-medium text-[var(--color-muted)]">
+                    <span className="flex-1">ชื่อตัวเลือก</span>
+                    <span className="w-20">ราคาเพิ่ม</span>
+                    <span className="w-20">จำนวนสต๊อก</span>
+                    <span className="w-4" />
+                  </div>
+                )}
                 {group.values.map((value, vi) => (
                   <div key={vi} className="flex items-center gap-2">
                     <input
                       value={value.label}
                       onChange={(e) => updateOptionValue(gi, vi, { label: e.target.value })}
-                      placeholder="ชื่อตัวเลือก"
+                      placeholder="ชื่อตัวเลือก เช่น แดง, น้ำเงิน, ไซซ์ S"
                       className="input flex-1"
                     />
                     <input
@@ -344,14 +352,16 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                       onChange={(e) =>
                         updateOptionValue(gi, vi, { priceDelta: Number(e.target.value) })
                       }
-                      placeholder="+ราคา"
+                      placeholder="+ราคา (ถ้ามี)"
+                      title="ราคาเพิ่ม/ลดจากราคาสินค้าหลัก (ใส่ 0 ถ้าราคาเท่ากัน)"
                       className="input w-20"
                     />
                     <input
                       type="number"
                       value={value.stock}
                       onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
-                      placeholder="สต๊อก"
+                      placeholder="จำนวนสต๊อก"
+                      title="จำนวนสต๊อกของตัวเลือกนี้โดยเฉพาะ"
                       className="input w-20"
                       min={0}
                     />
