@@ -329,45 +329,33 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                   ลบกลุ่ม
                 </button>
               </div>
-              <div className="flex flex-col gap-2">
-                {group.values.length > 0 && (
-                  <div className="flex items-center gap-2 px-0.5 text-[10px] font-medium text-[var(--color-muted)]">
-                    <span className="flex-1">ชื่อตัวเลือก</span>
-                    <span className="w-20">ราคาเพิ่ม</span>
-                    <span className="w-20">จำนวนสต๊อก</span>
-                    <span className="w-4" />
-                  </div>
-                )}
+              <div className="flex flex-col gap-3">
                 {group.values.map((value, vi) => (
-                  <div key={vi} className="flex items-center gap-2">
-                    <input
-                      value={value.label}
-                      onChange={(e) => updateOptionValue(gi, vi, { label: e.target.value })}
-                      placeholder="ชื่อตัวเลือก เช่น แดง, น้ำเงิน, ไซซ์ S"
-                      className="input flex-1"
-                    />
-                    <input
-                      type="number"
-                      value={value.priceDelta}
-                      onChange={(e) =>
-                        updateOptionValue(gi, vi, { priceDelta: Number(e.target.value) })
-                      }
-                      placeholder="+ราคา (ถ้ามี)"
-                      title="ราคาเพิ่ม/ลดจากราคาสินค้าหลัก (ใส่ 0 ถ้าราคาเท่ากัน)"
-                      className="input w-20"
-                    />
-                    <input
-                      type="number"
-                      value={value.stock}
-                      onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
-                      placeholder="จำนวนสต๊อก"
-                      title="จำนวนสต๊อกของตัวเลือกนี้โดยเฉพาะ"
-                      className="input w-20"
-                      min={0}
-                    />
+                  <div key={vi} className="flex items-end gap-2">
+                    <label className="flex flex-1 flex-col gap-1">
+                      <span className="text-xs font-medium text-slate-500">ชื่อสี/ตัวเลือก</span>
+                      <input
+                        type="text"
+                        value={value.label}
+                        onChange={(e) => updateOptionValue(gi, vi, { label: e.target.value })}
+                        placeholder="เช่น แดง"
+                        className="input"
+                      />
+                    </label>
+                    <label className="flex w-28 flex-col gap-1">
+                      <span className="text-xs font-medium text-slate-500">จำนวนสต๊อก</span>
+                      <input
+                        type="number"
+                        value={value.stock}
+                        onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
+                        placeholder="เช่น 3"
+                        className="input"
+                        min={0}
+                      />
+                    </label>
                     <button
                       onClick={() => removeOptionValue(gi, vi)}
-                      className="text-xs text-danger-500"
+                      className="mb-2.5 text-xs text-danger-500"
                     >
                       ✕
                     </button>
