@@ -84,6 +84,7 @@ model ProductOptionValue {
   priceDelta Float              @default(0)
   stock      Int                @default(0)
   sortOrder  Int                @default(0)
+  imageUrl   String? // per-option image override; falls back to the product's own images when null
 
   orderItemOptions OrderItemOption[]
 

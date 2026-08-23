@@ -71,6 +71,7 @@ export async function PUT(
                   label: v.label,
                   priceDelta: v.priceDelta,
                   stock: v.stock,
+                  imageUrl: v.imageUrl ?? null,
                   sortOrder: vi,
                 })),
               },

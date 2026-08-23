@@ -6,6 +6,7 @@ export const productOptionValueSchema = z.object({
   label: nonEmptyString("ชื่อตัวเลือก"),
   priceDelta: z.coerce.number().finite().default(0),
   stock: z.coerce.number().int().min(0, "สต๊อกต้องไม่ติดลบ").default(0),
+  imageUrl: z.string().nullable().optional(),
 });
 
 export const productOptionGroupSchema = z.object({

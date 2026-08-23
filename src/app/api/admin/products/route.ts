@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
               label: v.label,
               priceDelta: v.priceDelta,
               stock: v.stock,
+              imageUrl: v.imageUrl ?? null,
               sortOrder: vi,
             })),
           },

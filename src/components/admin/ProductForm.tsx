@@ -10,6 +10,7 @@ interface OptionValueForm {
   label: string;
   priceDelta: number;
   stock: number;
+  imageUrl?: string | null;
 }
 interface OptionGroupForm {
   name: string;
@@ -67,6 +68,7 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [optionImageUploadingKey, setOptionImageUploadingKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -104,10 +106,34 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
     setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
   }
 
+  async function handleOptionImageUpload(gi: number, vi: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const key = `${gi}-${vi}`;
+    setOptionImageUploadingKey(key);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "products");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "อัปโหลดไม่สำเร็จ");
+      updateOptionValue(gi, vi, { imageUrl: data.url });
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "อัปโหลดไม่สำเร็จ", "error");
+    } finally {
+      setOptionImageUploadingKey(null);
+      e.target.value = "";
+    }
+  }
+
   function addOptionGroup() {
     setForm((f) => ({
       ...f,
-      optionGroups: [...f.optionGroups, { name: "", values: [{ label: "", priceDelta: 0, stock: 0 }] }],
+      optionGroups: [
+        ...f.optionGroups,
+        { name: "", values: [{ label: "", priceDelta: 0, stock: 0, imageUrl: null }] },
+      ],
     }));
   }
 
@@ -126,7 +152,9 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
     setForm((f) => ({
       ...f,
       optionGroups: f.optionGroups.map((g, i) =>
-        i === gi ? { ...g, values: [...g.values, { label: "", priceDelta: 0, stock: 0 }] } : g
+        i === gi
+          ? { ...g, values: [...g.values, { label: "", priceDelta: 0, stock: 0, imageUrl: null }] }
+          : g
       ),
     }));
   }
@@ -331,34 +359,62 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
               </div>
               <div className="flex flex-col gap-3">
                 {group.values.map((value, vi) => (
-                  <div key={vi} className="flex items-end gap-2">
-                    <label className="flex flex-1 flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">ชื่อสี/ตัวเลือก</span>
-                      <input
-                        type="text"
-                        value={value.label}
-                        onChange={(e) => updateOptionValue(gi, vi, { label: e.target.value })}
-                        placeholder="เช่น แดง"
-                        className="input"
-                      />
-                    </label>
-                    <label className="flex w-28 flex-col gap-1">
-                      <span className="text-xs font-medium text-slate-500">จำนวนสต๊อก</span>
-                      <input
-                        type="number"
-                        value={value.stock}
-                        onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
-                        placeholder="เช่น 3"
-                        className="input"
-                        min={0}
-                      />
-                    </label>
-                    <button
-                      onClick={() => removeOptionValue(gi, vi)}
-                      className="mb-2.5 text-xs text-danger-500"
-                    >
-                      ✕
-                    </button>
+                  <div key={vi} className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] p-2">
+                    <div className="flex items-end gap-2">
+                      <label className="flex flex-1 flex-col gap-1">
+                        <span className="text-xs font-medium text-slate-500">ชื่อสี/ตัวเลือก</span>
+                        <input
+                          type="text"
+                          value={value.label}
+                          onChange={(e) => updateOptionValue(gi, vi, { label: e.target.value })}
+                          placeholder="เช่น แดง"
+                          className="input"
+                        />
+                      </label>
+                      <label className="flex w-28 flex-col gap-1">
+                        <span className="text-xs font-medium text-slate-500">จำนวนสต๊อก</span>
+                        <input
+                          type="number"
+                          value={value.stock}
+                          onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
+                          placeholder="เช่น 3"
+                          className="input"
+                          min={0}
+                        />
+                      </label>
+                      <button
+                        onClick={() => removeOptionValue(gi, vi)}
+                        className="mb-2.5 text-xs text-danger-500"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {value.imageUrl ? (
+                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border">
+                          <Image src={value.imageUrl} alt="" fill sizes="48px" className="object-cover" />
+                          <button
+                            onClick={() => updateOptionValue(gi, vi, { imageUrl: null })}
+                            className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-[10px] text-white"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex h-12 w-12 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--color-border)] text-center text-[9px] leading-tight text-[var(--color-muted)]">
+                          {optionImageUploadingKey === `${gi}-${vi}` ? "..." : "+ รูป"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleOptionImageUpload(gi, vi, e)}
+                          />
+                        </label>
+                      )}
+                      <span className="text-xs text-[var(--color-muted)]">
+                        รูปเฉพาะตัวเลือกนี้ (ไม่บังคับ ถ้าไม่ใส่จะใช้รูปสินค้าปกติ)
+                      </span>
+                    </div>
                   </div>
                 ))}
                 <button

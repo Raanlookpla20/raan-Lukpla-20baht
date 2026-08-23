@@ -56,6 +56,7 @@ export function serializeProductDetail(product: ProductWithDetailRelations) {
             label: v.label,
             priceDelta: v.priceDelta,
             stock: v.stock,
+            imageUrl: v.imageUrl,
           })),
       })),
   };

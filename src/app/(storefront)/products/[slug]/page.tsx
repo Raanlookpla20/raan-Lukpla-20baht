@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { serializeProductDetail } from "@/lib/serializers/product";
-import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductDetailClient } from "@/components/storefront/ProductDetailClient";
 
 async function getProduct(slug: string) {
@@ -63,21 +62,18 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 px-4 py-4 sm:grid-cols-2">
-      <ProductGallery images={product.images} productName={product.name} />
-      <ProductDetailClient
-        product={{
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          description: product.description,
-          price: product.price,
-          compareAtPrice: product.compareAtPrice,
-          stock: product.stock,
-          image: product.images[0]?.url ?? null,
-          optionGroups: product.optionGroups,
-        }}
-      />
-    </div>
+    <ProductDetailClient
+      product={{
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        description: product.description,
+        price: product.price,
+        compareAtPrice: product.compareAtPrice,
+        stock: product.stock,
+        images: product.images,
+        optionGroups: product.optionGroups,
+      }}
+    />
   );
 }
