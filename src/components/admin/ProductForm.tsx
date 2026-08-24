@@ -14,6 +14,7 @@ interface OptionValueForm {
 }
 interface OptionGroupForm {
   name: string;
+  useMainPrice: boolean;
   values: OptionValueForm[];
 }
 interface ImageForm {
@@ -132,7 +133,11 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
       ...f,
       optionGroups: [
         ...f.optionGroups,
-        { name: "", values: [{ label: "", priceDelta: 0, stock: 0, imageUrl: null }] },
+        {
+          name: "",
+          useMainPrice: true,
+          values: [{ label: "", priceDelta: 0, stock: 0, imageUrl: null }],
+        },
       ],
     }));
   }
@@ -145,6 +150,13 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
     setForm((f) => ({
       ...f,
       optionGroups: f.optionGroups.map((g, i) => (i === gi ? { ...g, name } : g)),
+    }));
+  }
+
+  function updateGroupUseMainPrice(gi: number, useMainPrice: boolean) {
+    setForm((f) => ({
+      ...f,
+      optionGroups: f.optionGroups.map((g, i) => (i === gi ? { ...g, useMainPrice } : g)),
     }));
   }
 
@@ -357,6 +369,17 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                   ลบกลุ่ม
                 </button>
               </div>
+              <label className="mb-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={group.useMainPrice}
+                  onChange={(e) => updateGroupUseMainPrice(gi, e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <span className="text-xs text-slate-600">
+                  ทุกตัวเลือกราคาเท่ากับราคาสินค้าหลัก
+                </span>
+              </label>
               <div className="flex flex-col gap-3">
                 {group.values.map((value, vi) => (
                   <div key={vi} className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] p-2">
@@ -382,6 +405,23 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                           min={0}
                         />
                       </label>
+                      {!group.useMainPrice && (
+                        <label className="flex w-28 flex-col gap-1">
+                          <span className="text-xs font-medium text-slate-500">ราคา (บาท)</span>
+                          <input
+                            type="number"
+                            value={form.price + value.priceDelta}
+                            onChange={(e) =>
+                              updateOptionValue(gi, vi, {
+                                priceDelta: Number(e.target.value) - form.price,
+                              })
+                            }
+                            placeholder="เช่น 150"
+                            className="input"
+                            min={0}
+                          />
+                        </label>
+                      )}
                       <button
                         onClick={() => removeOptionValue(gi, vi)}
                         className="mb-2.5 text-xs text-danger-500"

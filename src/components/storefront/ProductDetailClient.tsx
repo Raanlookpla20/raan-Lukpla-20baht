@@ -178,7 +178,8 @@ export function ProductDetailClient({ product }: { product: ProductDetailData })
                     )}
                   >
                     {value.label}
-                    {value.priceDelta > 0 && ` (+${formatCurrency(value.priceDelta)})`}
+                    {value.priceDelta !== 0 &&
+                      ` (${value.priceDelta > 0 ? "+" : "-"}${formatCurrency(Math.abs(value.priceDelta))})`}
                     {isOut && " (หมด)"}
                   </button>
                 );

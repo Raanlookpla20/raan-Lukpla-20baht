@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
             groupName: group.name,
             valueId: match.id,
             valueLabel: match.label,
-            priceDelta: match.priceDelta,
+            priceDelta: group.useMainPrice ? 0 : match.priceDelta,
             stock: match.stock,
           });
         }

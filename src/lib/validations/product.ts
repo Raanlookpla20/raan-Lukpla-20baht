@@ -12,6 +12,7 @@ export const productOptionValueSchema = z.object({
 export const productOptionGroupSchema = z.object({
   id: z.string().optional(),
   name: nonEmptyString("ชื่อกลุ่มตัวเลือก"),
+  useMainPrice: z.boolean().default(true),
   values: z.array(productOptionValueSchema).min(1, "ต้องมีอย่างน้อย 1 ตัวเลือก"),
 });
 

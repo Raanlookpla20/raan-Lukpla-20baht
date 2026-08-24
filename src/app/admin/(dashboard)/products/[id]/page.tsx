@@ -42,6 +42,7 @@ export default async function EditProductPage({
           images: product.images.map((img) => ({ url: img.url })),
           optionGroups: product.optionGroups.map((g) => ({
             name: g.name,
+            useMainPrice: g.useMainPrice,
             values: g.values.map((v) => ({
               label: v.label,
               priceDelta: v.priceDelta,

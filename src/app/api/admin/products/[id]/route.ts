@@ -66,10 +66,11 @@ export async function PUT(
             create: input.optionGroups.map((group, gi) => ({
               name: group.name,
               sortOrder: gi,
+              useMainPrice: group.useMainPrice,
               values: {
                 create: group.values.map((v, vi) => ({
                   label: v.label,
-                  priceDelta: v.priceDelta,
+                  priceDelta: group.useMainPrice ? 0 : v.priceDelta,
                   stock: v.stock,
                   imageUrl: v.imageUrl ?? null,
                   sortOrder: vi,

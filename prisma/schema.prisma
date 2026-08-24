@@ -66,12 +66,16 @@ model ProductImage {
 
 // e.g. group "สี" -> values แดง/เขียว/น้ำเงิน, group "ขนาด" -> values S/M/L
 model ProductOptionGroup {
-  id        String               @id @default(cuid())
-  productId String
-  product   Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  sortOrder Int                  @default(0)
-  values    ProductOptionValue[]
+  id           String               @id @default(cuid())
+  productId    String
+  product      Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name         String
+  sortOrder    Int                  @default(0)
+  // When true, every value in this group prices at the product's own price
+  // (their priceDelta is forced to 0 on save) and the admin form hides the
+  // per-value price inputs for the group.
+  useMainPrice Boolean              @default(true)
+  values       ProductOptionValue[]
 
   @@index([productId])
 }

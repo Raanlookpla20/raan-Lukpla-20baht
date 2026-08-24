@@ -54,7 +54,7 @@ export function serializeProductDetail(product: ProductWithDetailRelations) {
           .map((v) => ({
             id: v.id,
             label: v.label,
-            priceDelta: v.priceDelta,
+            priceDelta: group.useMainPrice ? 0 : v.priceDelta,
             stock: v.stock,
             imageUrl: v.imageUrl,
           })),
