@@ -126,7 +126,7 @@ export function ProductDetailClient({ product }: { product: ProductDetailData })
       : `เพิ่มลงตะกร้า · ${formatCurrency(unitPrice * quantity)}`;
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 px-4 py-4 sm:grid-cols-2">
+    <div className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-4 sm:grid-cols-2">
       <ProductGallery images={product.images} productName={product.name} overrideUrl={activeOptionImage} />
 
       <div className="flex flex-col gap-5">

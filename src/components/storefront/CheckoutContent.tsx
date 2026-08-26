@@ -183,7 +183,7 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
         <p className="text-sm text-[var(--color-muted)]">ตะกร้าสินค้าว่างเปล่า</p>
         <Button onClick={() => router.push("/")}>เลือกซื้อสินค้า</Button>
       </div>
@@ -191,7 +191,7 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-4">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-4">
       <h1 className="text-lg font-bold text-slate-900">ข้อมูลจัดส่ง</h1>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4">

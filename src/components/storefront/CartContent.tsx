@@ -26,7 +26,7 @@ export function CartContent({
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-20 text-center">
         <div className="text-5xl">🛒</div>
         <p className="text-sm text-[var(--color-muted)]">ยังไม่มีสินค้าในตะกร้า</p>
         <Link href="/">
@@ -42,7 +42,7 @@ export function CartContent({
   const total = subtotal + shippingFee;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-4">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-4">
       <h1 className="text-lg font-bold text-slate-900">ตะกร้าสินค้า</h1>
 
       <div className="flex flex-col gap-3">

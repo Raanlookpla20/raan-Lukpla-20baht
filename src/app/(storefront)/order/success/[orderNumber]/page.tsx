@@ -39,7 +39,7 @@ export default async function OrderSuccessPage({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-500/10 text-4xl">
           ✅

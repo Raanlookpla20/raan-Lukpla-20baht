@@ -53,7 +53,7 @@ export function OrderLookupContent() {
   }, [liff.profile]);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6">
       <h1 className="text-lg font-bold text-slate-900">ติดตามสถานะออเดอร์</h1>
 
       <div className="flex gap-2">
