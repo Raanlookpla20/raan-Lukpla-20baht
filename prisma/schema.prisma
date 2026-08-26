@@ -32,19 +32,19 @@ model Category {
 }
 
 model Product {
-  id              String    @id @default(cuid())
-  name            String
-  slug            String    @unique
-  description     String    @default("")
-  price           Float
-  compareAtPrice  Float?
-  stock           Int       @default(0)
-  isActive        Boolean   @default(true)
-  sortOrder       Int       @default(0)
-  categoryId      String
-  category        Category  @relation(fields: [categoryId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String   @default("")
+  price          Float
+  compareAtPrice Float?
+  stock          Int      @default(0)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   images       ProductImage[]
   optionGroups ProductOptionGroup[]
@@ -108,21 +108,21 @@ enum DiscountType {
 }
 
 model Promotion {
-  id               String        @id @default(cuid())
-  type             PromotionType
-  code             String?       @unique // required for COUPON, null for PRODUCT_DISCOUNT
-  discountType     DiscountType
-  value            Float
-  minOrderAmount   Float?
-  maxUses          Int?
-  usedCount        Int           @default(0)
-  expiresAt        DateTime?
-  isActive         Boolean       @default(true)
-  productId        String?
-  product          Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  orders           Order[]
+  id             String        @id @default(cuid())
+  type           PromotionType
+  code           String?       @unique // required for COUPON, null for PRODUCT_DISCOUNT
+  discountType   DiscountType
+  value          Float
+  minOrderAmount Float?
+  maxUses        Int?
+  usedCount      Int           @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean       @default(true)
+  productId      String?
+  product        Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  orders         Order[]
 
   @@index([productId])
 }
@@ -144,27 +144,35 @@ enum OrderStatus {
 }
 
 model Order {
-  id             String        @id @default(cuid())
-  orderNumber    String        @unique // e.g. ORD-000001
-  customerName   String
-  phone          String
-  address        String
-  note           String        @default("")
-  lineUserId     String?
-  paymentMethod  PaymentMethod
-  paymentSlipUrl String?
-  status         OrderStatus   @default(PENDING_PAYMENT)
-  subtotal       Float
-  discount       Float         @default(0)
-  shippingFee    Float         @default(0)
-  total          Float
-  promotionId    String?
-  promotion      Promotion?    @relation(fields: [promotionId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  orderNumber      String        @unique // e.g. ORD-000001
+  customerName     String
+  phone            String
+  address          String
+  // Optional pinned delivery location from the checkout map — both null
+  // when the customer skipped it, always set together.
+  latitude         Float?
+  longitude        Float?
+  // Free-text detail tied to the pin (unit/floor, gate color, landmark)
+  // that the coordinates alone can't convey; distinct from the general
+  // order `note` below.
+  mapAddressDetail String?
+  note             String        @default("")
+  lineUserId       String?
+  paymentMethod    PaymentMethod
+  paymentSlipUrl   String?
+  status           OrderStatus   @default(PENDING_PAYMENT)
+  subtotal         Float
+  discount         Float         @default(0)
+  shippingFee      Float         @default(0)
+  total            Float
+  promotionId      String?
+  promotion        Promotion?    @relation(fields: [promotionId], references: [id])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  items       OrderItem[]
-  statusLogs  OrderStatusLog[]
+  items      OrderItem[]
+  statusLogs OrderStatusLog[]
 
   @@index([phone])
   @@index([lineUserId])
@@ -180,7 +188,7 @@ model OrderItem {
   product     Product? @relation(fields: [productId], references: [id])
   productName String // snapshot at time of order
   optionLabel String? // display snapshot, e.g. "สี: แดง / ขนาด: M"
-  note        String  @default("") // free-text note from customer for this item
+  note        String   @default("") // free-text note from customer for this item
   unitPrice   Float // snapshot (base price + option deltas)
   quantity    Int
   subtotal    Float
@@ -201,19 +209,19 @@ model OrderItemOption {
   optionValue   ProductOptionValue? @relation(fields: [optionValueId], references: [id])
   groupName     String // snapshot, e.g. "สี"
   valueLabel    String // snapshot, e.g. "แดง"
-  priceDelta    Float   @default(0)
+  priceDelta    Float               @default(0)
 
   @@index([orderItemId])
   @@index([optionValueId])
 }
 
 model OrderStatusLog {
-  id         String      @id @default(cuid())
+  id         String       @id @default(cuid())
   orderId    String
-  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   fromStatus OrderStatus?
   toStatus   OrderStatus
-  createdAt  DateTime    @default(now())
+  createdAt  DateTime     @default(now())
 
   @@index([orderId])
 }

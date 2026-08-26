@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore, itemUnitPrice } from "@/store/cart";
@@ -9,6 +10,21 @@ import { useLiff } from "@/hooks/useLiff";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import type { StoreSettingsData } from "@/lib/store-settings";
+import type { LatLng } from "@/components/storefront/LocationMapPicker";
+
+// Leaflet touches `window` at module load — it must never be evaluated
+// during SSR, so the map picker is loaded client-only.
+const LocationMapPicker = dynamic(
+  () => import("@/components/storefront/LocationMapPicker").then((m) => m.LocationMapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 w-full items-center justify-center rounded-xl border border-[var(--color-border)] bg-slate-50 text-sm text-[var(--color-muted)] sm:h-80">
+        กำลังโหลดแผนที่...
+      </div>
+    ),
+  }
+);
 
 type PaymentMethod = "PROMPTPAY" | "BANK_TRANSFER" | "COD";
 
@@ -25,6 +41,8 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [pinLocation, setPinLocation] = useState<LatLng | null>(null);
+  const [mapAddressDetail, setMapAddressDetail] = useState("");
   const [orderNote, setOrderNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PROMPTPAY");
 
@@ -153,6 +171,9 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
           customerName: customerName.trim(),
           phone: phone.trim(),
           address: address.trim(),
+          latitude: pinLocation?.lat ?? null,
+          longitude: pinLocation?.lng ?? null,
+          mapAddressDetail: mapAddressDetail.trim() || null,
           note: orderNote.trim(),
           lineUserId: liff.profile?.userId ?? null,
           paymentMethod,
@@ -219,6 +240,17 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
             className="input resize-none"
             rows={3}
             placeholder="บ้านเลขที่ ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด รหัสไปรษณีย์"
+          />
+        </Field>
+        <Field label="ปักหมุดตำแหน่งจัดส่ง (ถ้ามี)">
+          <LocationMapPicker value={pinLocation} onChange={setPinLocation} />
+        </Field>
+        <Field label="รายละเอียดเพิ่มเติมสำหรับตำแหน่งที่ปักหมุด (ถ้ามี)">
+          <input
+            value={mapAddressDetail}
+            onChange={(e) => setMapAddressDetail(e.target.value)}
+            className="input"
+            placeholder="เช่น ชั้น 3 ห้อง 304, ประตูสีเขียว, ตึกด้านหลัง"
           />
         </Field>
         <Field label="หมายเหตุ (ถ้ามี)">

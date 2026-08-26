@@ -19,6 +19,9 @@ interface OrderDetail {
   customerName: string;
   phone: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
+  mapAddressDetail: string | null;
   note: string;
   paymentMethod: string;
   paymentSlipUrl: string | null;
@@ -104,6 +107,19 @@ export function OrderDetailManager({ order: initial }: { order: OrderDetail }) {
         <p>{order.customerName}</p>
         <p>{order.phone}</p>
         <p>{order.address}</p>
+        {order.mapAddressDetail && (
+          <p className="text-[var(--color-muted)]">รายละเอียดตำแหน่ง: {order.mapAddressDetail}</p>
+        )}
+        {order.latitude != null && order.longitude != null && (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline"
+          >
+            📍 เปิดตำแหน่งจัดส่งบนแผนที่
+          </a>
+        )}
         {order.note && <p className="text-[var(--color-muted)]">หมายเหตุ: {order.note}</p>}
         <p className="mt-2 text-xs text-[var(--color-muted)]">
           ชำระเงิน: {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}

@@ -16,6 +16,11 @@ export const checkoutSchema = z
     customerName: nonEmptyString("ชื่อ").max(100),
     phone: thaiPhoneSchema,
     address: nonEmptyString("ที่อยู่จัดส่ง").max(500),
+    // Optional pinned delivery location — the customer may skip the map
+    // entirely, in which case all three stay null.
+    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    mapAddressDetail: z.string().max(300).optional().nullable(),
     note: z.string().max(500).default(""),
     lineUserId: z.string().optional().nullable(),
     paymentMethod: z.enum(["PROMPTPAY", "BANK_TRANSFER", "COD"]),
@@ -29,6 +34,13 @@ export const checkoutSchema = z
         code: z.ZodIssueCode.custom,
         message: "กรุณาอัปโหลดสลิปการโอนเงิน",
         path: ["paymentSlipUrl"],
+      });
+    }
+    if ((data.latitude == null) !== (data.longitude == null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "พิกัดตำแหน่งไม่ถูกต้อง กรุณาปักหมุดใหม่",
+        path: ["latitude"],
       });
     }
   });
