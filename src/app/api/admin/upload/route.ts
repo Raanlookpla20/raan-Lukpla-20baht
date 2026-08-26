@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStorageProvider, MAX_IMAGE_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from "@/lib/storage";
+import { getStorageProvider, MAX_IMAGE_SIZE_BYTES, isRejectedByDeclaredMimeType } from "@/lib/storage";
 import { detectImageFormat } from "@/lib/image-format";
 import { convertHeicToJpeg, withJpegExtension } from "@/lib/heic-convert";
 
@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "ไม่พบไฟล์ที่อัปโหลด" }, { status: 400 });
   }
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+  if (isRejectedByDeclaredMimeType(file.type)) {
     return NextResponse.json(
-      { error: "รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, WebP, GIF)" },
+      { error: "รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, WebP, GIF, HEIC/HEIF)" },
       { status: 400 }
     );
   }
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
   if (realFormat === "heic") {
     try {
       buffer = await convertHeicToJpeg(buffer);
-    } catch {
+    } catch (err) {
+      console.error("HEIC to JPEG conversion failed:", err);
       return NextResponse.json(
         {
           error:
