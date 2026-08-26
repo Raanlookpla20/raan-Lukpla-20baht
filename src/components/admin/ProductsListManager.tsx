@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -20,12 +20,23 @@ interface ProductRow {
   image: string | null;
 }
 
+// Session-scoped (not localStorage): a fresh browser session should start
+// the list clean, but navigating to edit a product and back within the same
+// session should land exactly where the admin left off.
+const QUERY_STORAGE_KEY = "admin-products-list-query";
+const SCROLL_STORAGE_KEY = "admin-products-list-scroll";
+
 export function ProductsListManager() {
   const [products, setProducts] = useState<ProductRow[] | null>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
+  const scrollRestoredRef = useRef(false);
+  // Guards the [query] effect below from re-running the initial load a
+  // second time once the restored query (if any) lands — see the mount
+  // effect for why.
+  const skipNextQueryLoadRef = useRef(true);
 
   async function load(p = 1, q = query) {
     const params = new URLSearchParams({ page: String(p) });
@@ -37,10 +48,52 @@ export function ProductsListManager() {
     setHasMore(data.hasMore);
   }
 
+  // Restore the previous search text (if any) and fire the one-and-only
+  // initial load with its final value. If we instead let the [query] effect
+  // below handle every load, a restored query would fire it twice — once
+  // with the still-empty initial query, once after setQuery lands — and
+  // whichever fetch resolved last would win the race, sometimes leaving the
+  // (correctly filtered) UI showing the wrong, unfiltered list.
   useEffect(() => {
+    const savedQuery = sessionStorage.getItem(QUERY_STORAGE_KEY) ?? "";
+    if (savedQuery) {
+      setQuery(savedQuery); // the [query] effect's next run does the actual load
+    } else {
+      load(1, "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (skipNextQueryLoadRef.current) {
+      skipNextQueryLoadRef.current = false;
+      return;
+    }
     load(1, query);
+    sessionStorage.setItem(QUERY_STORAGE_KEY, query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  // Restore scroll position exactly once, after the list has actually
+  // rendered (restoring before the rows exist would just clamp to 0).
+  useEffect(() => {
+    if (!products || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+    if (savedScroll) {
+      requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll)));
+    }
+  }, [products]);
+
+  // Keep the latest scroll position saved so it survives navigating away to
+  // edit a product and back.
+  useEffect(() => {
+    function handleScroll() {
+      sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   async function handleDelete(product: ProductRow) {
     if (!confirm(`ลบสินค้า "${product.name}"?`)) return;
@@ -71,69 +124,86 @@ export function ProductsListManager() {
       />
 
       {!products ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
+        <div className="flex flex-col gap-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-11 rounded-lg" />
           ))}
         </div>
       ) : products.length === 0 ? (
         <p className="py-10 text-center text-sm text-[var(--color-muted)]">ไม่พบสินค้า</p>
       ) : (
-        <div className="flex flex-col gap-2">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3"
-            >
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-50">
-                <Image
-                  src={p.image ?? "/images/product-placeholder.svg"}
-                  alt=""
-                  fill
-                  sizes="56px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-800">{p.name}</p>
-                <p className="text-xs text-[var(--color-muted)]">
-                  {p.category?.name ?? "ไม่มีหมวดหมู่"} · {formatCurrency(p.price)}
-                </p>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span
+        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] bg-slate-50 text-left text-xs font-medium text-slate-500">
+                <th className="px-3 py-2 font-medium">รูป</th>
+                <th className="px-3 py-2 font-medium">ชื่อสินค้า</th>
+                <th className="px-3 py-2 font-medium">หมวดหมู่</th>
+                <th className="px-3 py-2 font-medium">ราคา</th>
+                <th className="px-3 py-2 font-medium">สต็อก</th>
+                <th className="px-3 py-2 font-medium">สถานะ</th>
+                <th className="px-3 py-2 text-right font-medium">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {products.map((p) => (
+                <tr key={p.id} className="hover:bg-slate-50">
+                  <td className="px-3 py-1.5">
+                    <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                      <Image
+                        src={p.image ?? "/images/product-placeholder.svg"}
+                        alt=""
+                        fill
+                        sizes="36px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="max-w-[240px] truncate px-3 py-1.5 font-medium text-slate-800">
+                    {p.name}
+                  </td>
+                  <td className="px-3 py-1.5 text-slate-600">{p.category?.name ?? "ไม่มีหมวดหมู่"}</td>
+                  <td className="px-3 py-1.5 whitespace-nowrap text-slate-800">
+                    {formatCurrency(p.price)}
+                  </td>
+                  <td
                     className={clsx(
-                      "rounded-full px-2 py-0.5 text-[10px] font-medium",
-                      p.isActive ? "bg-success-500/10 text-success-500" : "bg-slate-200 text-slate-500"
+                      "px-3 py-1.5",
+                      p.stock <= 5 ? "font-medium text-warning-500" : "text-slate-600"
                     )}
                   >
-                    {p.isActive ? "เปิดขาย" : "ปิดขาย"}
-                  </span>
-                  <span
-                    className={clsx(
-                      "rounded-full px-2 py-0.5 text-[10px] font-medium",
-                      p.stock <= 5 ? "bg-warning-500/10 text-warning-500" : "bg-slate-100 text-slate-500"
-                    )}
-                  >
-                    สต๊อก {p.stock}
-                  </span>
-                </div>
-              </div>
-              <div className="flex shrink-0 flex-col gap-1">
-                <Link
-                  href={`/admin/products/${p.id}`}
-                  className="rounded-full px-3 py-1 text-center text-xs font-medium text-primary-600 hover:bg-primary-50"
-                >
-                  แก้ไข
-                </Link>
-                <button
-                  onClick={() => handleDelete(p)}
-                  className="rounded-full px-3 py-1 text-xs font-medium text-danger-500 hover:bg-danger-50"
-                >
-                  ลบ
-                </button>
-              </div>
-            </div>
-          ))}
+                    {p.stock}
+                  </td>
+                  <td className="px-3 py-1.5">
+                    <span
+                      className={clsx(
+                        "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                        p.isActive
+                          ? "bg-success-500/10 text-success-500"
+                          : "bg-slate-200 text-slate-500"
+                      )}
+                    >
+                      {p.isActive ? "เปิดขาย" : "ปิดขาย"}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">
+                    <Link
+                      href={`/admin/products/${p.id}`}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50"
+                    >
+                      แก้ไข
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium text-danger-500 hover:bg-danger-50"
+                    >
+                      ลบ
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
