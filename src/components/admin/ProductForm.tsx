@@ -214,9 +214,16 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "บันทึกไม่สำเร็จ");
-      addToast(isEdit ? "แก้ไขสินค้าแล้ว" : "เพิ่มสินค้าแล้ว");
-      router.push("/admin/products");
-      router.refresh();
+      if (isEdit) {
+        // Stay on the edit page so the admin can keep working on the same
+        // product — only a fresh "new product" has nothing left to do here
+        // and should land back on the list.
+        addToast("บันทึกสำเร็จ");
+      } else {
+        addToast("เพิ่มสินค้าแล้ว");
+        router.push("/admin/products");
+        router.refresh();
+      }
     } catch (err) {
       addToast(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ", "error");
     } finally {

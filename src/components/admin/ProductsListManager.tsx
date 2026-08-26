@@ -20,6 +20,11 @@ interface ProductRow {
   image: string | null;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+
 // Session-scoped (not localStorage): a fresh browser session should start
 // the list clean, but navigating to edit a product and back within the same
 // session should land exactly where the admin left off.
@@ -38,7 +43,25 @@ export function ProductsListManager() {
   // effect for why.
   const skipNextQueryLoadRef = useRef(true);
 
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkMoving, setBulkMoving] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((data) => setCategories(data.categories));
+  }, []);
+
   async function load(p = 1, q = query) {
+    // A fresh page of rows invalidates any selection made against the
+    // previous set (different search, different page, or a just-completed
+    // bulk action) — start clean rather than carry stale ids (or a stale
+    // target-category choice) forward.
+    setSelectedIds(new Set());
+    setBulkCategoryId("");
     const params = new URLSearchParams({ page: String(p) });
     if (q) params.set("q", q);
     const res = await fetch(`/api/admin/products?${params.toString()}`);
@@ -46,6 +69,56 @@ export function ProductsListManager() {
     setProducts(data.products);
     setPage(data.page);
     setHasMore(data.hasMore);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (!products) return;
+    setSelectedIds((prev) => {
+      const allSelected = products.every((p) => prev.has(p.id));
+      return allSelected ? new Set() : new Set(products.map((p) => p.id));
+    });
+  }
+
+  useEffect(() => {
+    if (!selectAllRef.current || !products) return;
+    const selectedCount = products.filter((p) => selectedIds.has(p.id)).length;
+    selectAllRef.current.indeterminate = selectedCount > 0 && selectedCount < products.length;
+  }, [selectedIds, products]);
+
+  async function handleBulkMove() {
+    if (selectedIds.size === 0 || !bulkCategoryId) return;
+    const targetCategory = categories.find((c) => c.id === bulkCategoryId);
+    const count = selectedIds.size;
+    const confirmed = confirm(
+      `ยืนยันย้ายสินค้า ${count} รายการ ไปหมวดหมู่ "${targetCategory?.name ?? ""}" ใช่หรือไม่`
+    );
+    if (!confirmed) return;
+
+    setBulkMoving(true);
+    try {
+      const res = await fetch("/api/admin/products/bulk-category", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: [...selectedIds], categoryId: bulkCategoryId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "ย้ายหมวดหมู่ไม่สำเร็จ");
+      addToast(`ย้ายสินค้า ${count} รายการเรียบร้อย`);
+      load(page, query); // also clears the (now-stale) selection + category choice
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "ย้ายหมวดหมู่ไม่สำเร็จ", "error");
+    } finally {
+      setBulkMoving(false);
+    }
   }
 
   // Restore the previous search text (if any) and fire the one-and-only
@@ -108,7 +181,7 @@ export function ProductsListManager() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={clsx("flex flex-col gap-4", selectedIds.size > 0 && "pb-20")}>
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-lg font-bold text-slate-900">สินค้า</h1>
         <Link href="/admin/products/new">
@@ -136,6 +209,16 @@ export function ProductsListManager() {
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-slate-50 text-left text-xs font-medium text-slate-500">
+                <th className="px-3 py-2 font-medium">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={products.length > 0 && products.every((p) => selectedIds.has(p.id))}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4"
+                    aria-label="เลือกสินค้าทั้งหมด"
+                  />
+                </th>
                 <th className="px-3 py-2 font-medium">รูป</th>
                 <th className="px-3 py-2 font-medium">ชื่อสินค้า</th>
                 <th className="px-3 py-2 font-medium">หมวดหมู่</th>
@@ -147,7 +230,19 @@ export function ProductsListManager() {
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {products.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50">
+                <tr
+                  key={p.id}
+                  className={clsx("hover:bg-slate-50", selectedIds.has(p.id) && "bg-primary-50/60")}
+                >
+                  <td className="px-3 py-1.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      className="h-4 w-4"
+                      aria-label={`เลือก ${p.name}`}
+                    />
+                  </td>
                   <td className="px-3 py-1.5">
                     <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-slate-50">
                       <Image
@@ -215,6 +310,40 @@ export function ProductsListManager() {
           <Button variant="outline" size="sm" disabled={!hasMore} onClick={() => load(page + 1)}>
             ถัดไป
           </Button>
+        </div>
+      )}
+
+      {selectedIds.size > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-white px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-slate-700">
+              เลือกอยู่ {selectedIds.size} รายการ
+            </span>
+            <select
+              value={bulkCategoryId}
+              onChange={(e) => setBulkCategoryId(e.target.value)}
+              className="input w-auto min-w-[180px] flex-1"
+            >
+              <option value="">เลือกหมวดหมู่ปลายทาง</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" onClick={handleBulkMove} disabled={!bulkCategoryId || bulkMoving}>
+              {bulkMoving ? "กำลังย้าย..." : "ย้ายหมวดหมู่"}
+            </Button>
+            <button
+              onClick={() => {
+                setSelectedIds(new Set());
+                setBulkCategoryId("");
+              }}
+              className="text-xs font-medium text-slate-500 hover:text-slate-700"
+            >
+              ยกเลิกการเลือก
+            </button>
+          </div>
         </div>
       )}
     </div>

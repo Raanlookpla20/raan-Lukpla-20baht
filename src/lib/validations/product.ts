@@ -37,3 +37,10 @@ export const productInputSchema = z.object({
 });
 
 export type ProductInput = z.infer<typeof productInputSchema>;
+
+export const bulkCategoryUpdateSchema = z.object({
+  productIds: z.array(nonEmptyString("รหัสสินค้า")).min(1, "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ"),
+  categoryId: nonEmptyString("หมวดหมู่"),
+});
+
+export type BulkCategoryUpdateInput = z.infer<typeof bulkCategoryUpdateSchema>;
