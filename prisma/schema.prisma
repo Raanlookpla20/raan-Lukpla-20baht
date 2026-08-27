@@ -149,13 +149,17 @@ model Order {
   customerName     String
   phone            String
   address          String
-  // Optional pinned delivery location from the checkout map — both null
-  // when the customer skipped it, always set together.
+  // Pinned delivery location from the checkout map. Required by
+  // checkoutSchema/the orders API for every new order (see
+  // src/lib/validations/order.ts) — kept nullable here only because rows
+  // created before that requirement was added have no coordinates; the
+  // admin UI and serializer must keep tolerating null for those.
   latitude         Float?
   longitude        Float?
   // Free-text detail tied to the pin (unit/floor, gate color, landmark)
   // that the coordinates alone can't convey; distinct from the general
-  // order `note` below.
+  // order `note` below. Also required for new orders, nullable for the
+  // same backward-compatibility reason as latitude/longitude above.
   mapAddressDetail String?
   note             String        @default("")
   lineUserId       String?

@@ -129,7 +129,7 @@ export function LocationMapPicker({
       <p className="text-xs text-[var(--color-muted)]">
         {value
           ? `พิกัดที่เลือก: ${value.lat.toFixed(6)}, ${value.lng.toFixed(6)} — แตะบนแผนที่หรือลากหมุดเพื่อปรับตำแหน่ง`
-          : "แตะบนแผนที่เพื่อปักหมุดตำแหน่งจัดส่ง (ไม่บังคับ)"}
+          : "แตะบนแผนที่เพื่อปักหมุดตำแหน่งจัดส่ง (จำเป็นต้องปักหมุด)"}
       </p>
     </div>
   );

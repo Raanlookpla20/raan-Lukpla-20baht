@@ -115,19 +115,29 @@ export function OrderDetailManager({
         <p>{order.customerName}</p>
         <p>{order.phone}</p>
         <p>{order.address}</p>
-        {order.mapAddressDetail && (
-          <p className="text-[var(--color-muted)]">รายละเอียดตำแหน่ง: {order.mapAddressDetail}</p>
-        )}
-        {order.latitude != null && order.longitude != null && (
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline"
-          >
-            📍 เปิดตำแหน่งจัดส่งบนแผนที่
-          </a>
-        )}
+
+        <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+          <p className="mb-1 text-xs font-semibold text-slate-500">ตำแหน่งจัดส่งที่ปักหมุด</p>
+          {order.latitude != null && order.longitude != null ? (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline"
+            >
+              📍 เปิดตำแหน่งจัดส่งบนแผนที่
+            </a>
+          ) : (
+            <p className="text-sm text-[var(--color-muted)]">
+              ไม่มีพิกัดที่ปักหมุด (ออเดอร์เก่าก่อนบังคับปักหมุด)
+            </p>
+          )}
+          <p className="mt-1 text-xs font-semibold text-slate-500">รายละเอียดที่อยู่เพิ่มเติม</p>
+          <p className="text-sm text-slate-700">
+            {order.mapAddressDetail || "ไม่มีข้อมูล (ออเดอร์เก่าก่อนบังคับกรอก)"}
+          </p>
+        </div>
+
         {distanceFromStoreKm != null && (
           <p
             className={clsx(

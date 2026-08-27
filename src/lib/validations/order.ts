@@ -16,11 +16,29 @@ export const checkoutSchema = z
     customerName: nonEmptyString("ชื่อ").max(100),
     phone: thaiPhoneSchema,
     address: nonEmptyString("ที่อยู่จัดส่ง").max(500),
-    // Optional pinned delivery location — the customer may skip the map
-    // entirely, in which case all three stay null.
-    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
-    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
-    mapAddressDetail: z.string().max(300).optional().nullable(),
+    // Pinned delivery location is required — deliveries with no coordinates
+    // and no landmark detail have historically been undeliverable.
+    latitude: z
+      .number({
+        required_error: "กรุณาปักหมุดตำแหน่งจัดส่ง",
+        invalid_type_error: "กรุณาปักหมุดตำแหน่งจัดส่ง",
+      })
+      .min(-90, "กรุณาปักหมุดตำแหน่งจัดส่ง")
+      .max(90, "กรุณาปักหมุดตำแหน่งจัดส่ง"),
+    longitude: z
+      .number({
+        required_error: "กรุณาปักหมุดตำแหน่งจัดส่ง",
+        invalid_type_error: "กรุณาปักหมุดตำแหน่งจัดส่ง",
+      })
+      .min(-180, "กรุณาปักหมุดตำแหน่งจัดส่ง")
+      .max(180, "กรุณาปักหมุดตำแหน่งจัดส่ง"),
+    // Preprocess missing/null to "" so an omitted key (a direct API call
+    // that skips the form entirely) still hits the Thai message below
+    // instead of zod's generic "Required".
+    mapAddressDetail: z.preprocess(
+      (val) => val ?? "",
+      nonEmptyString("รายละเอียดที่อยู่ เช่น บ้านเลขที่ ซอย จุดสังเกต").max(300)
+    ),
     note: z.string().max(500).default(""),
     lineUserId: z.string().optional().nullable(),
     paymentMethod: z.enum(["PROMPTPAY", "BANK_TRANSFER", "COD"]),
@@ -34,13 +52,6 @@ export const checkoutSchema = z
         code: z.ZodIssueCode.custom,
         message: "กรุณาอัปโหลดสลิปการโอนเงิน",
         path: ["paymentSlipUrl"],
-      });
-    }
-    if ((data.latitude == null) !== (data.longitude == null)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "พิกัดตำแหน่งไม่ถูกต้อง กรุณาปักหมุดใหม่",
-        path: ["latitude"],
       });
     }
   });

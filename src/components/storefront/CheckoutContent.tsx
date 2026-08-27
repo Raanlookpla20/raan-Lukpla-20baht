@@ -168,6 +168,14 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
       setFormError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
+    if (!pinLocation) {
+      setFormError("กรุณาปักหมุดตำแหน่งจัดส่ง");
+      return;
+    }
+    if (!mapAddressDetail.trim()) {
+      setFormError("กรุณากรอกรายละเอียดที่อยู่ เช่น บ้านเลขที่ ซอย จุดสังเกต");
+      return;
+    }
     if (paymentMethod === "BANK_TRANSFER" && !slipUrl) {
       setFormError("กรุณาอัปโหลดสลิปการโอนเงิน");
       return;
@@ -186,9 +194,9 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
           customerName: customerName.trim(),
           phone: phone.trim(),
           address: address.trim(),
-          latitude: pinLocation?.lat ?? null,
-          longitude: pinLocation?.lng ?? null,
-          mapAddressDetail: mapAddressDetail.trim() || null,
+          latitude: pinLocation.lat,
+          longitude: pinLocation.lng,
+          mapAddressDetail: mapAddressDetail.trim(),
           note: orderNote.trim(),
           lineUserId: liff.profile?.userId ?? null,
           paymentMethod,
@@ -257,7 +265,7 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
             placeholder="บ้านเลขที่ ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด รหัสไปรษณีย์"
           />
         </Field>
-        <Field label="ปักหมุดตำแหน่งจัดส่ง (ถ้ามี)">
+        <Field label="ปักหมุดตำแหน่งจัดส่ง *">
           <LocationMapPicker value={pinLocation} onChange={setPinLocation} />
           {distanceFromStoreKm != null && (
             <p
@@ -271,12 +279,12 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
             </p>
           )}
         </Field>
-        <Field label="รายละเอียดเพิ่มเติมสำหรับตำแหน่งที่ปักหมุด (ถ้ามี)">
+        <Field label="รายละเอียดที่อยู่เพิ่มเติม (บ้านเลขที่ ซอย จุดสังเกต) *">
           <input
             value={mapAddressDetail}
             onChange={(e) => setMapAddressDetail(e.target.value)}
             className="input"
-            placeholder="เช่น ชั้น 3 ห้อง 304, ประตูสีเขียว, ตึกด้านหลัง"
+            placeholder="เช่น บ้านเลขที่ 12/3 ซอย 5, ชั้น 3 ห้อง 304, ประตูสีเขียว, ตึกด้านหลัง"
           />
         </Field>
         <Field label="หมายเหตุ (ถ้ามี)">
@@ -404,7 +412,12 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
         </p>
       )}
 
-      <Button size="lg" fullWidth onClick={handleSubmit} disabled={submitting || slipUploading}>
+      <Button
+        size="lg"
+        fullWidth
+        onClick={handleSubmit}
+        disabled={submitting || slipUploading || !pinLocation || !mapAddressDetail.trim()}
+      >
         {submitting ? "กำลังสั่งซื้อ..." : "ยืนยันสั่งซื้อ"}
       </Button>
     </div>

@@ -197,12 +197,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Authoritative check — never trust a client-supplied shipping fee.
-      // Only a pinned location (both coordinates present, per checkoutSchema)
-      // can trigger the distance-based free delivery; no pin means this is
-      // skipped entirely and shipping falls back to the subtotal threshold.
+      // checkoutSchema requires a pinned location on every new order, so
+      // the distance check always runs here.
       const isWithinFreeDeliveryRadius =
-        input.latitude != null &&
-        input.longitude != null &&
         haversineDistanceKm(
           { lat: settings.storeLatitude, lng: settings.storeLongitude },
           { lat: input.latitude, lng: input.longitude }
@@ -224,9 +221,9 @@ export async function POST(request: NextRequest) {
           customerName: input.customerName,
           phone: input.phone,
           address: input.address,
-          latitude: input.latitude ?? null,
-          longitude: input.longitude ?? null,
-          mapAddressDetail: input.mapAddressDetail?.trim() || null,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          mapAddressDetail: input.mapAddressDetail.trim(),
           note: input.note,
           lineUserId: input.lineUserId || null,
           paymentMethod: input.paymentMethod,
