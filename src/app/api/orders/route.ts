@@ -4,6 +4,7 @@ import { checkoutSchema, orderLookupSchema } from "@/lib/validations/order";
 import { resolveProductPricing, isPromotionActive, computeCouponDiscount } from "@/lib/pricing";
 import { getNextOrderNumber } from "@/lib/order-number";
 import { getStoreSettings } from "@/lib/store-settings";
+import { haversineDistanceKm } from "@/lib/geo";
 import { serializeOrder } from "@/lib/serializers/order";
 import { sendPushToAllSubscribers } from "@/lib/push";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
@@ -195,8 +196,21 @@ export async function POST(request: NextRequest) {
         promotionId = coupon.id;
       }
 
-      const shippingFee =
-        settings.freeShippingThreshold != null && subtotal >= settings.freeShippingThreshold
+      // Authoritative check — never trust a client-supplied shipping fee.
+      // Only a pinned location (both coordinates present, per checkoutSchema)
+      // can trigger the distance-based free delivery; no pin means this is
+      // skipped entirely and shipping falls back to the subtotal threshold.
+      const isWithinFreeDeliveryRadius =
+        input.latitude != null &&
+        input.longitude != null &&
+        haversineDistanceKm(
+          { lat: settings.storeLatitude, lng: settings.storeLongitude },
+          { lat: input.latitude, lng: input.longitude }
+        ) <= settings.freeDeliveryRadiusKm;
+
+      const shippingFee = isWithinFreeDeliveryRadius
+        ? 0
+        : settings.freeShippingThreshold != null && subtotal >= settings.freeShippingThreshold
           ? 0
           : settings.shippingFlatRate;
 

@@ -8,6 +8,7 @@ import { useCartStore, itemUnitPrice } from "@/store/cart";
 import { useToastStore } from "@/store/toast";
 import { useLiff } from "@/hooks/useLiff";
 import { formatCurrency } from "@/lib/format";
+import { haversineDistanceKm } from "@/lib/geo";
 import { Button } from "@/components/ui/Button";
 import type { StoreSettingsData } from "@/lib/store-settings";
 import type { LatLng } from "@/components/storefront/LocationMapPicker";
@@ -74,8 +75,22 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
     [items]
   );
   const discount = couponApplied?.discount ?? 0;
-  const shippingFee =
-    settings.freeShippingThreshold != null && subtotal >= settings.freeShippingThreshold
+
+  // Distance-based free delivery only ever applies when the customer has
+  // pinned a location — no pin means no distance check, checkout behaves
+  // exactly as before.
+  const distanceFromStoreKm = pinLocation
+    ? haversineDistanceKm(
+        { lat: settings.storeLatitude, lng: settings.storeLongitude },
+        pinLocation
+      )
+    : null;
+  const isWithinFreeDeliveryRadius =
+    distanceFromStoreKm != null && distanceFromStoreKm <= settings.freeDeliveryRadiusKm;
+
+  const shippingFee = isWithinFreeDeliveryRadius
+    ? 0
+    : settings.freeShippingThreshold != null && subtotal >= settings.freeShippingThreshold
       ? 0
       : settings.shippingFlatRate;
   const total = Math.max(0, subtotal - discount + shippingFee);
@@ -244,6 +259,17 @@ export function CheckoutContent({ settings }: { settings: StoreSettingsData }) {
         </Field>
         <Field label="ปักหมุดตำแหน่งจัดส่ง (ถ้ามี)">
           <LocationMapPicker value={pinLocation} onChange={setPinLocation} />
+          {distanceFromStoreKm != null && (
+            <p
+              className={`mt-1 text-sm font-medium ${
+                isWithinFreeDeliveryRadius ? "text-success-500" : "text-slate-600"
+              }`}
+            >
+              {isWithinFreeDeliveryRadius
+                ? `🎉 อยู่ในเขตส่งฟรี! (ห่างจากร้าน ${distanceFromStoreKm.toFixed(1)} กม.)`
+                : `ห่างจากร้าน ${distanceFromStoreKm.toFixed(1)} กม. (อยู่นอกเขตส่งฟรี)`}
+            </p>
+          )}
         </Field>
         <Field label="รายละเอียดเพิ่มเติมสำหรับตำแหน่งที่ปักหมุด (ถ้ามี)">
           <input

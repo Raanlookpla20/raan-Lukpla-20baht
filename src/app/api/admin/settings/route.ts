@@ -30,6 +30,9 @@ export async function PUT(request: NextRequest) {
       codEnabled: input.codEnabled,
       shippingFlatRate: input.shippingFlatRate,
       freeShippingThreshold: input.freeShippingThreshold ?? null,
+      storeLatitude: input.storeLatitude,
+      storeLongitude: input.storeLongitude,
+      freeDeliveryRadiusKm: input.freeDeliveryRadiusKm,
     },
     update: {
       storeName: input.storeName,
@@ -42,6 +45,9 @@ export async function PUT(request: NextRequest) {
       codEnabled: input.codEnabled,
       shippingFlatRate: input.shippingFlatRate,
       freeShippingThreshold: input.freeShippingThreshold ?? null,
+      storeLatitude: input.storeLatitude,
+      storeLongitude: input.storeLongitude,
+      freeDeliveryRadiusKm: input.freeDeliveryRadiusKm,
     },
   });
 

@@ -231,6 +231,47 @@ export function SettingsManager() {
         </label>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4">
+        <p className="text-sm font-semibold text-slate-700">ส่งฟรีตามระยะทางจากร้าน</p>
+        <p className="text-xs text-[var(--color-muted)]">
+          เมื่อลูกค้าปักหมุดที่อยู่จัดส่งในหน้า checkout แล้วอยู่ในรัศมีนี้จากร้าน ระบบจะคิดค่าส่งเป็น 0 บาทให้อัตโนมัติ
+          ไม่ว่ายอดสั่งซื้อจะเท่าไหร่
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-slate-500">ละติจูดร้าน</span>
+            <input
+              type="number"
+              step="any"
+              value={settings.storeLatitude}
+              onChange={(e) => update("storeLatitude", Number(e.target.value))}
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-slate-500">ลองจิจูดร้าน</span>
+            <input
+              type="number"
+              step="any"
+              value={settings.storeLongitude}
+              onChange={(e) => update("storeLongitude", Number(e.target.value))}
+              className="input"
+            />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">รัศมีส่งฟรี (กิโลเมตร)</span>
+          <input
+            type="number"
+            step="any"
+            value={settings.freeDeliveryRadiusKm}
+            onChange={(e) => update("freeDeliveryRadiusKm", Number(e.target.value))}
+            className="input"
+            min={0}
+          />
+        </label>
+      </div>
+
       <Button fullWidth onClick={handleSave} disabled={saving}>
         {saving ? "กำลังบันทึก..." : "บันทึกการตั้งค่า"}
       </Button>

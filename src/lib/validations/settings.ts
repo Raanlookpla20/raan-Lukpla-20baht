@@ -12,6 +12,9 @@ export const storeSettingsInputSchema = z.object({
   codEnabled: z.boolean(),
   shippingFlatRate: z.coerce.number().min(0),
   freeShippingThreshold: z.coerce.number().min(0).nullable().optional(),
+  storeLatitude: z.coerce.number().min(-90).max(90),
+  storeLongitude: z.coerce.number().min(-180).max(180),
+  freeDeliveryRadiusKm: z.coerce.number().min(0),
 });
 
 export type StoreSettingsInput = z.infer<typeof storeSettingsInputSchema>;

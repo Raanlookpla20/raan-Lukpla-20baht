@@ -256,5 +256,11 @@ model StoreSettings {
   codEnabled            Boolean  @default(true)
   shippingFlatRate      Float    @default(40)
   freeShippingThreshold Float?   @default(500)
+  // Store location + free-delivery radius for the checkout distance check —
+  // editable here rather than hardcoded since the shop can move or the
+  // radius can be adjusted later.
+  storeLatitude         Float    @default(16.0334794)
+  storeLongitude        Float    @default(100.3798431)
+  freeDeliveryRadiusKm  Float    @default(3)
   updatedAt             DateTime @updatedAt
 }

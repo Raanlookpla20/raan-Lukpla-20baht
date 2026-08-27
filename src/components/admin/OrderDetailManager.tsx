@@ -42,7 +42,15 @@ interface OrderDetail {
   statusLogs?: { fromStatus: string | null; toStatus: string; createdAt: string }[];
 }
 
-export function OrderDetailManager({ order: initial }: { order: OrderDetail }) {
+export function OrderDetailManager({
+  order: initial,
+  distanceFromStoreKm,
+  freeDeliveryRadiusKm,
+}: {
+  order: OrderDetail;
+  distanceFromStoreKm?: number | null;
+  freeDeliveryRadiusKm?: number | null;
+}) {
   const [order, setOrder] = useState(initial);
   const [updating, setUpdating] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
@@ -119,6 +127,22 @@ export function OrderDetailManager({ order: initial }: { order: OrderDetail }) {
           >
             📍 เปิดตำแหน่งจัดส่งบนแผนที่
           </a>
+        )}
+        {distanceFromStoreKm != null && (
+          <p
+            className={clsx(
+              "text-xs font-medium",
+              freeDeliveryRadiusKm != null && distanceFromStoreKm <= freeDeliveryRadiusKm
+                ? "text-success-500"
+                : "text-[var(--color-muted)]"
+            )}
+          >
+            ห่างจากร้าน {distanceFromStoreKm.toFixed(1)} กม.
+            {freeDeliveryRadiusKm != null &&
+              (distanceFromStoreKm <= freeDeliveryRadiusKm
+                ? " (อยู่ในเขตส่งฟรี)"
+                : " (อยู่นอกเขตส่งฟรี)")}
+          </p>
         )}
         {order.note && <p className="text-[var(--color-muted)]">หมายเหตุ: {order.note}</p>}
         <p className="mt-2 text-xs text-[var(--color-muted)]">

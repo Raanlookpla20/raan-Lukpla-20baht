@@ -11,6 +11,9 @@ export interface StoreSettingsData {
   codEnabled: boolean;
   shippingFlatRate: number;
   freeShippingThreshold: number | null;
+  storeLatitude: number;
+  storeLongitude: number;
+  freeDeliveryRadiusKm: number;
 }
 
 const DEFAULTS: StoreSettingsData = {
@@ -24,6 +27,9 @@ const DEFAULTS: StoreSettingsData = {
   codEnabled: true,
   shippingFlatRate: 40,
   freeShippingThreshold: 500,
+  storeLatitude: 16.0334794,
+  storeLongitude: 100.3798431,
+  freeDeliveryRadiusKm: 3,
 };
 
 /** Reads the singleton store settings row, creating it with defaults if missing. */
@@ -52,5 +58,8 @@ export async function getStoreSettings(): Promise<StoreSettingsData> {
     codEnabled: row.codEnabled,
     shippingFlatRate: row.shippingFlatRate,
     freeShippingThreshold: row.freeShippingThreshold,
+    storeLatitude: row.storeLatitude,
+    storeLongitude: row.storeLongitude,
+    freeDeliveryRadiusKm: row.freeDeliveryRadiusKm,
   };
 }
