@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ImageCropModal } from "@/components/admin/ImageCropModal";
 import { useToastStore } from "@/store/toast";
 
 interface OptionValueForm {
@@ -45,6 +46,21 @@ function slugify(text: string): string {
     .replace(/-+/g, "-");
 }
 
+type CropContext = { kind: "main" } | { kind: "option"; gi: number; vi: number };
+interface CropQueueItem {
+  id: number;
+  file: File;
+  context: CropContext;
+}
+
+let cropQueueIdCounter = 0;
+
+function croppedFilename(originalName: string, mimeType: string): string {
+  const base = originalName.replace(/\.\w+$/, "");
+  const ext = mimeType === "image/png" ? "png" : "jpg";
+  return `${base}.${ext}`;
+}
+
 const emptyForm: ProductFormData = {
   name: "",
   slug: "",
@@ -70,6 +86,8 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [optionImageUploadingKey, setOptionImageUploadingKey] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<CropQueueItem[]>([]);
+  const cropTarget = cropQueue[0] ?? null;
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -81,37 +99,30 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", "products");
-        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "อัปโหลดไม่สำเร็จ");
-        setForm((f) => ({ ...f, images: [...f.images, { url: data.url }] }));
-      }
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : "อัปโหลดไม่สำเร็จ", "error");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    setCropQueue((q) => [
+      ...q,
+      ...Array.from(files).map((file) => ({ id: ++cropQueueIdCounter, file, context: { kind: "main" as const } })),
+    ]);
+    e.target.value = "";
   }
 
   function removeImage(index: number) {
     setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
   }
 
-  async function handleOptionImageUpload(gi: number, vi: number, e: React.ChangeEvent<HTMLInputElement>) {
+  function handleOptionImageUpload(gi: number, vi: number, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const key = `${gi}-${vi}`;
-    setOptionImageUploadingKey(key);
+    setCropQueue((q) => [...q, { id: ++cropQueueIdCounter, file, context: { kind: "option", gi, vi } }]);
+    e.target.value = "";
+  }
+
+  async function uploadFile(file: File, context: CropContext) {
+    if (context.kind === "main") setUploading(true);
+    else setOptionImageUploadingKey(`${context.gi}-${context.vi}`);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -119,13 +130,36 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "อัปโหลดไม่สำเร็จ");
-      updateOptionValue(gi, vi, { imageUrl: data.url });
+      if (context.kind === "main") {
+        setForm((f) => ({ ...f, images: [...f.images, { url: data.url }] }));
+      } else {
+        updateOptionValue(context.gi, context.vi, { imageUrl: data.url });
+      }
     } catch (err) {
       addToast(err instanceof Error ? err.message : "อัปโหลดไม่สำเร็จ", "error");
     } finally {
-      setOptionImageUploadingKey(null);
-      e.target.value = "";
+      if (context.kind === "main") setUploading(false);
+      else setOptionImageUploadingKey(null);
     }
+  }
+
+  function dequeueCrop() {
+    setCropQueue((q) => q.slice(1));
+  }
+
+  function handleCropCancel() {
+    if (!cropTarget) return;
+    uploadFile(cropTarget.file, cropTarget.context);
+    dequeueCrop();
+  }
+
+  function handleCropConfirm(blob: Blob) {
+    if (!cropTarget) return;
+    const croppedFile = new File([blob], croppedFilename(cropTarget.file.name, blob.type), {
+      type: blob.type,
+    });
+    uploadFile(croppedFile, cropTarget.context);
+    dequeueCrop();
   }
 
   function addOptionGroup() {
@@ -484,6 +518,16 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
           {saving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
         </Button>
       </div>
+
+      {cropTarget && (
+        <ImageCropModal
+          key={cropTarget.id}
+          file={cropTarget.file}
+          queueLabel={cropQueue.length > 1 ? `1/${cropQueue.length}` : undefined}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }
