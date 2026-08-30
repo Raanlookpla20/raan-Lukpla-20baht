@@ -28,12 +28,18 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
   const [zoom, setZoom] = useState(1);
   const [zoomBounds, setZoomBounds] = useState<{ min: number; max: number }>({ min: 1, max: 3 });
   const [processing, setProcessing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
+    setLoadFailed(false);
     const url = URL.createObjectURL(file);
     setImageUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  function handleImageError() {
+    setLoadFailed(true);
+  }
 
   function handleReady() {
     const cropper = cropperRef.current?.cropper;
@@ -62,12 +68,21 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
     const cropper = cropperRef.current?.cropper;
     if (!cropper) return;
     setProcessing(true);
+    // getCroppedCanvas() returns null if the source image never actually
+    // loaded (e.g. HEIC, which browsers can't decode in an <img> tag even
+    // though selecting the file and creating an object URL succeeds) — fall
+    // back to the original file instead of crashing on a null canvas.
     const canvas = cropper.getCroppedCanvas({
       imageSmoothingEnabled: true,
       imageSmoothingQuality: "high",
       maxWidth: 2048,
       maxHeight: 2048,
     });
+    if (!canvas) {
+      setProcessing(false);
+      setLoadFailed(true);
+      return;
+    }
     canvas.toBlob(
       (blob) => {
         setProcessing(false);
@@ -116,7 +131,7 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
           className="relative w-full overflow-hidden rounded-lg bg-slate-900"
           style={{ height: "min(60vh, 420px)" }}
         >
-          {imageUrl && (
+          {imageUrl && !loadFailed && (
             <Cropper
               ref={cropperRef}
               src={imageUrl}
@@ -135,28 +150,37 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
               wheelZoomRatio={0.1}
               ready={handleReady}
               zoom={handleZoomEvent}
+              onError={handleImageError}
             />
+          )}
+          {loadFailed && (
+            <div className="flex h-full items-center justify-center p-6 text-center text-sm text-white">
+              ไม่สามารถแสดงตัวอย่างรูปนี้ได้ในเบราว์เซอร์ (เช่น ไฟล์ HEIC) กด
+              &quot;ยกเลิก&quot; เพื่อใช้รูปต้นฉบับแทน ระบบจะแปลงไฟล์ให้อัตโนมัติตอนอัปโหลด
+            </div>
           )}
         </div>
 
-        <label className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">ซูม</span>
-          <input
-            type="range"
-            min={zoomBounds.min}
-            max={zoomBounds.max}
-            step={(zoomBounds.max - zoomBounds.min) / 100 || 0.01}
-            value={zoom}
-            onChange={(e) => handleZoomSlider(Number(e.target.value))}
-            className="flex-1"
-          />
-        </label>
+        {!loadFailed && (
+          <label className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500">ซูม</span>
+            <input
+              type="range"
+              min={zoomBounds.min}
+              max={zoomBounds.max}
+              step={(zoomBounds.max - zoomBounds.min) / 100 || 0.01}
+              value={zoom}
+              onChange={(e) => handleZoomSlider(Number(e.target.value))}
+              className="flex-1"
+            />
+          </label>
+        )}
 
         <div className="flex gap-2">
           <Button variant="outline" fullWidth onClick={onCancel} disabled={processing}>
             ยกเลิก (ใช้รูปเดิม)
           </Button>
-          <Button fullWidth onClick={handleConfirm} disabled={processing || !imageUrl}>
+          <Button fullWidth onClick={handleConfirm} disabled={processing || !imageUrl || loadFailed}>
             {processing ? "กำลังครอบตัด..." : "ยืนยัน"}
           </Button>
         </div>
