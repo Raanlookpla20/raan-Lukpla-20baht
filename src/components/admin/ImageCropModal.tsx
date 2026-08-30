@@ -4,6 +4,7 @@ import "cropperjs/dist/cropper.css";
 import { useEffect, useRef, useState } from "react";
 import { Cropper, ReactCropperElement } from "react-cropper";
 import { Button } from "@/components/ui/Button";
+import { detectImageFormat } from "@/lib/image-format";
 
 type AspectMode = "square" | "free";
 
@@ -14,11 +15,17 @@ interface ImageCropModalProps {
   onCancel: () => void;
 }
 
-// Output PNG when the source is PNG so transparency survives the crop;
-// every other format (including HEIC, which the upload endpoint converts
-// separately) is flattened to JPEG like the rest of the pipeline expects.
-function outputMimeFor(file: File): string {
-  return file.type === "image/png" ? "image/png" : "image/jpeg";
+// Sniff the first bytes so an iOS photo mislabelled "image/jpeg" is still
+// recognised, and fall back to the declared type / extension when the sniff
+// is inconclusive.
+async function looksLikeHeic(file: File): Promise<boolean> {
+  try {
+    const header = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+    if (detectImageFormat(header) === "heic") return true;
+  } catch {
+    // fall through to the cheaper heuristics
+  }
+  return /image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
 }
 
 export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageCropModalProps) {
@@ -29,12 +36,57 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
   const [zoomBounds, setZoomBounds] = useState<{ min: number; max: number }>({ min: 1, max: 3 });
   const [processing, setProcessing] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  // True once a HEIC source has been converted to JPEG in the browser, so the
+  // crop output is always flattened to JPEG regardless of the original type.
+  const convertedFromHeicRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
     setLoadFailed(false);
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
-    return () => URL.revokeObjectURL(url);
+    setImageUrl(null);
+    setPreparing(false);
+    convertedFromHeicRef.current = false;
+
+    async function prepare() {
+      let displayBlob: Blob = file;
+
+      if (await looksLikeHeic(file)) {
+        if (cancelled) return;
+        setPreparing(true);
+        try {
+          // Dynamic import: heic2any bundles a full libheif build, so it must
+          // stay out of the main bundle and only load when a HEIC is picked.
+          const heic2any = (await import("heic2any")).default;
+          const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+          displayBlob = Array.isArray(result) ? result[0] : result;
+          convertedFromHeicRef.current = true;
+        } catch {
+          // Corrupt file or library error — drop back to the old behaviour:
+          // show the "can't preview" notice and let the user cancel to upload
+          // the original (the server converts HEIC on its own).
+          if (!cancelled) {
+            setPreparing(false);
+            setLoadFailed(true);
+          }
+          return;
+        }
+      }
+
+      if (cancelled) return;
+      objectUrl = URL.createObjectURL(displayBlob);
+      setImageUrl(objectUrl);
+      setPreparing(false);
+    }
+
+    void prepare();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [file]);
 
   function handleImageError() {
@@ -64,14 +116,21 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
     cropperRef.current?.cropper.setAspectRatio(mode === "square" ? 1 : NaN);
   }
 
+  // Output PNG when the source is a real PNG so transparency survives the crop;
+  // every other format — including a HEIC that we just converted to JPEG — is
+  // flattened to JPEG like the rest of the pipeline expects.
+  function outputMime(): string {
+    if (convertedFromHeicRef.current) return "image/jpeg";
+    return file.type === "image/png" ? "image/png" : "image/jpeg";
+  }
+
   function handleConfirm() {
     const cropper = cropperRef.current?.cropper;
     if (!cropper) return;
     setProcessing(true);
     // getCroppedCanvas() returns null if the source image never actually
-    // loaded (e.g. HEIC, which browsers can't decode in an <img> tag even
-    // though selecting the file and creating an object URL succeeds) — fall
-    // back to the original file instead of crashing on a null canvas.
+    // loaded — fall back to the "can't preview" notice instead of crashing on
+    // a null canvas.
     const canvas = cropper.getCroppedCanvas({
       imageSmoothingEnabled: true,
       imageSmoothingQuality: "high",
@@ -89,7 +148,7 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
         if (blob) onConfirm(blob);
         else onCancel();
       },
-      outputMimeFor(file),
+      outputMime(),
       0.92
     );
   }
@@ -131,7 +190,13 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
           className="relative w-full overflow-hidden rounded-lg bg-slate-900"
           style={{ height: "min(60vh, 420px)" }}
         >
-          {imageUrl && !loadFailed && (
+          {preparing && (
+            <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-white">
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              กำลังเตรียมรูปภาพ...
+            </div>
+          )}
+          {imageUrl && !loadFailed && !preparing && (
             <Cropper
               ref={cropperRef}
               src={imageUrl}
@@ -153,7 +218,7 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
               onError={handleImageError}
             />
           )}
-          {loadFailed && (
+          {loadFailed && !preparing && (
             <div className="flex h-full items-center justify-center p-6 text-center text-sm text-white">
               ไม่สามารถแสดงตัวอย่างรูปนี้ได้ในเบราว์เซอร์ (เช่น ไฟล์ HEIC) กด
               &quot;ยกเลิก&quot; เพื่อใช้รูปต้นฉบับแทน ระบบจะแปลงไฟล์ให้อัตโนมัติตอนอัปโหลด
@@ -161,7 +226,7 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
           )}
         </div>
 
-        {!loadFailed && (
+        {!loadFailed && !preparing && imageUrl && (
           <label className="flex items-center gap-2">
             <span className="text-xs font-medium text-slate-500">ซูม</span>
             <input
@@ -180,7 +245,11 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
           <Button variant="outline" fullWidth onClick={onCancel} disabled={processing}>
             ยกเลิก (ใช้รูปเดิม)
           </Button>
-          <Button fullWidth onClick={handleConfirm} disabled={processing || !imageUrl || loadFailed}>
+          <Button
+            fullWidth
+            onClick={handleConfirm}
+            disabled={processing || preparing || !imageUrl || loadFailed}
+          >
             {processing ? "กำลังครอบตัด..." : "ยืนยัน"}
           </Button>
         </div>
