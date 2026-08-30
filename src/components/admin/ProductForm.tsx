@@ -102,9 +102,14 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    // Snapshot into a plain array before queuing the state update: e.target.files
+    // is a *live* FileList, and resetting e.target.value below clears it — React
+    // doesn't run the setCropQueue updater until after this handler returns, so
+    // reading `files` lazily inside the updater would see an already-empty list.
+    const fileArray = Array.from(files);
     setCropQueue((q) => [
       ...q,
-      ...Array.from(files).map((file) => ({ id: ++cropQueueIdCounter, file, context: { kind: "main" as const } })),
+      ...fileArray.map((file) => ({ id: ++cropQueueIdCounter, file, context: { kind: "main" as const } })),
     ]);
     e.target.value = "";
   }
