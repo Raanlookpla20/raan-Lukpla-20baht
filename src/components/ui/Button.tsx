@@ -19,7 +19,11 @@ const variantClasses: Record<Variant, string> = {
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "text-xs px-3 py-1.5 gap-1.5",
+  // "sm" is the only size short enough (~28px) to risk a mis-tap on a phone,
+  // so it gets a mobile-only touch-target floor (max-sm: — inert at sm: and
+  // up) instead of the desktop-affecting padding bump this would otherwise
+  // take everywhere it's used.
+  sm: "text-xs px-3 py-1.5 max-sm:min-h-11 max-sm:px-3.5 gap-1.5",
   md: "text-sm px-4 py-2.5 gap-2",
   lg: "text-base px-6 py-3 gap-2",
 };

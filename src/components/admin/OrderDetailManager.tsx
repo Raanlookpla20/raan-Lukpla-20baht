@@ -98,7 +98,7 @@ export function OrderDetailManager({
               disabled={updating}
               onClick={() => changeStatus(s)}
               className={clsx(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50",
+                "flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 max-sm:min-h-11 max-sm:px-4",
                 order.status === s
                   ? "bg-primary-500 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"

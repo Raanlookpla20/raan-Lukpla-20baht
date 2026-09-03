@@ -3,6 +3,7 @@
 import "cropperjs/dist/cropper.css";
 import { useEffect, useRef, useState } from "react";
 import { Cropper, ReactCropperElement } from "react-cropper";
+import clsx from "clsx";
 import { Button } from "@/components/ui/Button";
 import { detectImageFormat } from "@/lib/image-format";
 
@@ -164,22 +165,20 @@ export function ImageCropModal({ file, queueLabel, onConfirm, onCancel }: ImageC
             <button
               type="button"
               onClick={() => handleAspectChange("square")}
-              className={
-                aspectMode === "square"
-                  ? "bg-primary-500 px-3 py-1 text-white"
-                  : "bg-white px-3 py-1 text-slate-600"
-              }
+              className={clsx(
+                "flex items-center justify-center px-3 py-1 max-sm:min-h-11 max-sm:px-4",
+                aspectMode === "square" ? "bg-primary-500 text-white" : "bg-white text-slate-600"
+              )}
             >
               จัตุรัส
             </button>
             <button
               type="button"
               onClick={() => handleAspectChange("free")}
-              className={
-                aspectMode === "free"
-                  ? "bg-primary-500 px-3 py-1 text-white"
-                  : "bg-white px-3 py-1 text-slate-600"
-              }
+              className={clsx(
+                "flex items-center justify-center px-3 py-1 max-sm:min-h-11 max-sm:px-4",
+                aspectMode === "free" ? "bg-primary-500 text-white" : "bg-white text-slate-600"
+              )}
             >
               อิสระ
             </button>

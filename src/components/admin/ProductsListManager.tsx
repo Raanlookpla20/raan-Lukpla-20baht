@@ -48,6 +48,7 @@ export function ProductsListManager() {
   const [bulkCategoryId, setBulkCategoryId] = useState("");
   const [bulkMoving, setBulkMoving] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const selectAllMobileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -89,9 +90,11 @@ export function ProductsListManager() {
   }
 
   useEffect(() => {
-    if (!selectAllRef.current || !products) return;
+    if (!products) return;
     const selectedCount = products.filter((p) => selectedIds.has(p.id)).length;
-    selectAllRef.current.indeterminate = selectedCount > 0 && selectedCount < products.length;
+    const indeterminate = selectedCount > 0 && selectedCount < products.length;
+    if (selectAllRef.current) selectAllRef.current.indeterminate = indeterminate;
+    if (selectAllMobileRef.current) selectAllMobileRef.current.indeterminate = indeterminate;
   }, [selectedIds, products]);
 
   async function handleBulkMove() {
@@ -205,7 +208,88 @@ export function ProductsListManager() {
       ) : products.length === 0 ? (
         <p className="py-10 text-center text-sm text-[var(--color-muted)]">ไม่พบสินค้า</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white">
+        <>
+          {/* Mobile: card list (the dense table below reads better on a wide screen than
+              scrolled sideways, so it's desktop/tablet-only from sm: up). */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            <label className="flex items-center gap-2 px-1 text-xs font-medium text-slate-500">
+              <input
+                ref={selectAllMobileRef}
+                type="checkbox"
+                checked={products.length > 0 && products.every((p) => selectedIds.has(p.id))}
+                onChange={toggleSelectAll}
+                className="h-5 w-5"
+                aria-label="เลือกสินค้าทั้งหมด"
+              />
+              เลือกทั้งหมด
+            </label>
+            {products.map((p) => (
+              <div
+                key={p.id}
+                className={clsx(
+                  "flex items-start gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3",
+                  selectedIds.has(p.id) && "bg-primary-50/60"
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(p.id)}
+                  onChange={() => toggleSelect(p.id)}
+                  className="mt-1 h-5 w-5 shrink-0"
+                  aria-label={`เลือก ${p.name}`}
+                />
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                  <Image
+                    src={p.image ?? "/images/product-placeholder.svg"}
+                    alt=""
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800">{p.name}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {p.category?.name ?? "ไม่มีหมวดหมู่"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                    <span className="font-semibold text-slate-800">{formatCurrency(p.price)}</span>
+                    <span className={p.stock <= 5 ? "font-medium text-warning-500" : "text-slate-500"}>
+                      สต็อก {p.stock}
+                    </span>
+                    <span
+                      className={clsx(
+                        "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                        p.isActive
+                          ? "bg-success-500/10 text-success-500"
+                          : "bg-slate-200 text-slate-500"
+                      )}
+                    >
+                      {p.isActive ? "เปิดขาย" : "ปิดขาย"}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Link
+                      href={`/admin/products/${p.id}`}
+                      className="flex min-h-11 flex-1 items-center justify-center rounded-full bg-primary-50 px-3 text-xs font-medium text-primary-600"
+                    >
+                      แก้ไข
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      className="flex min-h-11 flex-1 items-center justify-center rounded-full bg-danger-50 px-3 text-xs font-medium text-danger-500"
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop/tablet: dense table, unchanged, horizontally scrollable if it
+              ever needs more room than the viewport gives it. */}
+          <div className="hidden overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white sm:block">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-slate-50 text-left text-xs font-medium text-slate-500">
@@ -299,7 +383,8 @@ export function ProductsListManager() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {(page > 1 || hasMore) && (

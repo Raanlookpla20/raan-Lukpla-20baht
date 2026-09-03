@@ -309,13 +309,13 @@ export function PromotionsManager() {
               <div className="flex shrink-0 gap-2">
                 <button
                   onClick={() => openEdit(promo)}
-                  className="rounded-full px-3 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50"
+                  className="flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 max-sm:min-h-11 max-sm:px-4"
                 >
                   แก้ไข
                 </button>
                 <button
                   onClick={() => handleDelete(promo)}
-                  className="rounded-full px-3 py-1 text-xs font-medium text-danger-500 hover:bg-danger-50"
+                  className="flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium text-danger-500 hover:bg-danger-50 max-sm:min-h-11 max-sm:px-4"
                 >
                   ลบ
                 </button>

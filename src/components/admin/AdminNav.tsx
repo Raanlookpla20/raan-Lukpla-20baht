@@ -29,7 +29,7 @@ export function AdminNav() {
         <span className="text-sm font-bold text-slate-900">ระบบหลังบ้าน · ร้านลูกปลา 20 บาท</span>
         <button
           onClick={handleLogout}
-          className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100"
+          className="flex shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 max-sm:min-h-11 max-sm:px-4"
         >
           ออกจากระบบ
         </button>
@@ -42,7 +42,7 @@ export function AdminNav() {
               key={item.href}
               href={item.href}
               className={clsx(
-                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition",
+                "flex shrink-0 items-center justify-center rounded-full px-4 py-1.5 text-sm font-medium transition max-sm:min-h-11",
                 active ? "bg-primary-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               )}
             >

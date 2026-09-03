@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ImageCropModal } from "@/components/admin/ImageCropModal";
+import { VoiceTextInput } from "@/components/admin/VoiceTextInput";
 import { useToastStore } from "@/store/toast";
 
 interface OptionValueForm {
@@ -273,17 +274,14 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
   return (
     <div className="flex flex-col gap-5 pb-10">
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-500">ชื่อสินค้า</span>
-          <input
-            value={form.name}
-            onChange={(e) => {
-              update("name", e.target.value);
-              if (!slugTouched) update("slug", slugify(e.target.value));
-            }}
-            className="input"
-          />
-        </label>
+        <VoiceTextInput
+          label="ชื่อสินค้า"
+          value={form.name}
+          onChange={(value) => {
+            update("name", value);
+            if (!slugTouched) update("slug", slugify(value));
+          }}
+        />
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-slate-500">Slug</span>
           <input
@@ -429,8 +427,8 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
               <div className="flex flex-col gap-3">
                 {group.values.map((value, vi) => (
                   <div key={vi} className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] p-2">
-                    <div className="flex items-end gap-2">
-                      <label className="flex flex-1 flex-col gap-1">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <label className="flex flex-col gap-1 sm:flex-1">
                         <span className="text-xs font-medium text-slate-500">ชื่อสี/ตัวเลือก</span>
                         <input
                           type="text"
@@ -440,40 +438,42 @@ export function ProductForm({ initial }: { initial?: ProductFormData }) {
                           className="input"
                         />
                       </label>
-                      <label className="flex w-28 flex-col gap-1">
-                        <span className="text-xs font-medium text-slate-500">จำนวนสต๊อก</span>
-                        <input
-                          type="number"
-                          value={value.stock}
-                          onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
-                          placeholder="เช่น 3"
-                          className="input"
-                          min={0}
-                        />
-                      </label>
-                      {!group.useMainPrice && (
-                        <label className="flex w-28 flex-col gap-1">
-                          <span className="text-xs font-medium text-slate-500">ราคา (บาท)</span>
+                      <div className="flex items-end gap-2">
+                        <label className="flex flex-1 flex-col gap-1 sm:w-28 sm:flex-none">
+                          <span className="text-xs font-medium text-slate-500">จำนวนสต๊อก</span>
                           <input
                             type="number"
-                            value={form.price + value.priceDelta}
-                            onChange={(e) =>
-                              updateOptionValue(gi, vi, {
-                                priceDelta: Number(e.target.value) - form.price,
-                              })
-                            }
-                            placeholder="เช่น 150"
+                            value={value.stock}
+                            onChange={(e) => updateOptionValue(gi, vi, { stock: Number(e.target.value) })}
+                            placeholder="เช่น 3"
                             className="input"
                             min={0}
                           />
                         </label>
-                      )}
-                      <button
-                        onClick={() => removeOptionValue(gi, vi)}
-                        className="mb-2.5 text-xs text-danger-500"
-                      >
-                        ✕
-                      </button>
+                        {!group.useMainPrice && (
+                          <label className="flex flex-1 flex-col gap-1 sm:w-28 sm:flex-none">
+                            <span className="text-xs font-medium text-slate-500">ราคา (บาท)</span>
+                            <input
+                              type="number"
+                              value={form.price + value.priceDelta}
+                              onChange={(e) =>
+                                updateOptionValue(gi, vi, {
+                                  priceDelta: Number(e.target.value) - form.price,
+                                })
+                              }
+                              placeholder="เช่น 150"
+                              className="input"
+                              min={0}
+                            />
+                          </label>
+                        )}
+                        <button
+                          onClick={() => removeOptionValue(gi, vi)}
+                          className="mb-2.5 shrink-0 text-xs text-danger-500"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {value.imageUrl ? (
